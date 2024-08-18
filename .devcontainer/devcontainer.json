@@ -1,0 +1,31 @@
+{
+  "name": "Go",
+  "image": "mcr.microsoft.com/devcontainers/go:1-1.22-bookworm",
+  "features": {
+    "ghcr.io/dhoeric/features/google-cloud-cli:1": {},
+    "ghcr.io/devcontainers/features/terraform:1": {
+      "version": "1.5.7"
+    }
+  },
+  // "forwardPorts": []
+  // "remoteUser": "root"
+  // "postCreateCommand": "",
+  // "postAttachCommand": "",
+  "postCreateCommand": "go mod download",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "go.useLanguageServer": true
+      },
+      "extensions": [
+        "ms-azuretools.vscode-docker",
+        "esbenp.prettier-vscode",
+        "oderwat.indent-rainbow",
+        "vscode-icons-team.vscode-icons",
+        "github.vscode-github-actions",
+        "streetsidesoftware.code-spell-checker",
+        "ms-vscode.go"
+      ]
+    }
+  }
+}
