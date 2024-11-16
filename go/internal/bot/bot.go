@@ -2,73 +2,82 @@ package bot
 
 import (
 	"context"
-	"fmt"
 	"strings"
-	"time"
 
-	computeMetadata "cloud.google.com/go/compute/metadata"
-	discord "github.com/bwmarrin/discordgo"
+	"github.com/bwmarrin/discordgo"
+	"github.com/tayl0rm/bluefield/go/internal/util"
 	"go.uber.org/zap"
 	compute "google.golang.org/api/compute/v1"
 )
 
-const (
-	zone      = "europe-west1-b"
-	instance  = "-server"
-	projectID = "ga-test-project-503ca"
-)
-
-func newMessage(discord *discord.Session, message *discord.MessageCreate) error {
+func MessageHandler() {
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 	ctx := context.Background()
-	game := "valheim"
-	instanceName := game + instance
-
-	if message.Author.ID == discord.State.User.ID { // Tell Bot ignore its own messages
-
-	}
-	// Create a new Compute Service client
-	service, err := compute.NewService(ctx)
+	config, err := util.LoadConfig(".")
 	if err != nil {
-		logger.Error("Error creating client.", zap.Error(err))
+		logger.Fatal("cannot load config:", zap.Error(err))
 	}
 
-	switch {
-	case strings.Contains(message.Content, "!valheim-start"):
-		opr, err := service.Instances.Start(projectID, zone, instanceName).Do()
-		if err != nil {
-			logger.Error("Error creating client.", zap.Error(err))
-		}
-		serverIP, err := computeMetadata.ExternalIPWithContext(ctx)
-		if err != nil {
-			logger.Error("Error creating client.", zap.Error(err))
-		}
-		discord.ChannelMessageSend(message.ChannelID, serverIP)
-		return waitForZoneOperation(service, projectID, zone, opr.Name)
-
-	case strings.Contains(message.Content, "!valheim-down"):
-		opr, err := service.Instances.Stop(projectID, zone, instanceName).Do()
-		if err != nil {
-			logger.Error("Error creating client.", zap.Error(err))
-		}
-		return waitForZoneOperation(service, projectID, zone, opr.Name)
+	bot, err := discordgo.New(config.BotToken)
+	if err != nil {
+		logger.Fatal("Error creating Discord session.", zap.Error(err))
+		return
 	}
 
-	return nil
-}
+	bot.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
+		service, err := compute.NewService(ctx)
 
-func waitForZoneOperation(service *compute.Service, projectID, zone, operationName string) error {
-	for {
-		op, err := service.ZoneOperations.Get(projectID, zone, operationName).Do()
 		if err != nil {
-			return err
+			s.ChannelMessageSend(m.ChannelID, "Something went wrong! @ekc0_")
+			logger.Fatal("Error creating client.", zap.Error(err))
 		}
-		if op.Status == "DONE" {
-			break
+
+		switch {
+		case strings.Contains(m.Content, "!valheim-start"):
+			game := "valheim"
+			instanceName := game + config.Instance
+			service.Instances.Start(config.ProjectID, config.Zone, instanceName).Do()
+			if err != nil {
+				s.ChannelMessageSend(m.ChannelID, "Error starting Server! @ekc0_")
+				logger.Error("Error starting Server.", zap.Error(err))
+			}
+
+			instance, err := service.Instances.Get(config.ProjectID, config.Zone, instanceName).Context(ctx).Do()
+			if err != nil {
+				s.ChannelMessageSend(m.ChannelID, "Error getting Server IP! @ekc0_")
+				logger.Error("Error getting Server IP", zap.Error(err))
+			}
+
+			var externalIP string
+			for _, networkInterface := range instance.NetworkInterfaces {
+				for _, accessConfig := range networkInterface.AccessConfigs {
+					if accessConfig.Name == "External NAT" {
+						externalIP = accessConfig.NatIP
+						break
+					}
+				}
+			}
+
+			s.ChannelMessageSend(m.ChannelID, externalIP)
+
+		case strings.Contains(m.Content, "!valheim-down"):
+			game := "valheim"
+			instanceName := game + config.Instance
+			service.Instances.Stop(config.ProjectID, config.Zone, instanceName).Do()
+			if err != nil {
+				s.ChannelMessageSend(m.ChannelID, "Error stopping Server! @ekc0_")
+				logger.Error("Error stopping Server", zap.Error(err))
+			}
 		}
-		fmt.Printf("Waiting more 10 secs for the operation\n")
-		time.Sleep(10 * time.Second)
+	})
+
+	err = bot.Open()
+	if err != nil {
+		logger.Error("Error openning connection", zap.Error(err))
+		return
 	}
-	return nil
+
+	logger.Info("Bot is running. Press CTRL+C to exit.")
+	select {} // Keep the program running
 }
