@@ -1,7 +1,7 @@
 package main
 
 import (
-	"internal/bot"
+	"github.com/tayl0rm/bluefield/go/internal/bot"
 )
 
 func main() {

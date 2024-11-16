@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"util/config"
+	"github.com/tayl0rm/bluefield/go/internal/util"
 	"go.uber.org/zap"
 	compute "google.golang.org/api/compute/v1"
 )
