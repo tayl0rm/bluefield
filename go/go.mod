@@ -1,6 +1,6 @@
 module github.com/tayl0rm/bluefield/go
 
-go 1.22.5
+go 1.23
 
 require (
 	github.com/bwmarrin/discordgo v0.28.1
