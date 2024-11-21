@@ -59,12 +59,15 @@ func MessageHandler() {
 				}
 			}
 
-			s.ChannelMessageSend(m.ChannelID, externalIP)
+			s.ChannelMessageSend(m.ChannelID, "You can access the Server via the following IP: "+externalIP)
+			s.ChannelMessageSend(m.ChannelID, "The Server name is: "+config.ServerName)
+			s.ChannelMessageSend(m.ChannelID, "The Server password is: "+config.ServerPassword)
 
 		case strings.Contains(m.Content, "!valheim-down"):
 			game := "valheim"
 			instanceName := game + config.Instance
 			service.Instances.Stop(config.ProjectID, config.Zone, instanceName).Do()
+			s.ChannelMessageSend(m.ChannelID, "The server is shutting down.")
 			if err != nil {
 				s.ChannelMessageSend(m.ChannelID, "Error stopping Server! @ekc0_")
 				logger.Error("Error stopping Server", zap.Error(err))

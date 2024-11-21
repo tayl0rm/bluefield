@@ -5,10 +5,12 @@ import (
 )
 
 type Config struct {
-	ProjectID string `mapstructure:"ProjectID"`
-	BotToken  string `mapstructure:"BotToken"`
-	Instance  string `mapstructure:"Instance"`
-	Zone      string `mapstructure:"Zone"`
+	ProjectID      string `mapstructure:"ProjectID"`
+	BotToken       string `mapstructure:"BotToken"`
+	Instance       string `mapstructure:"Instance"`
+	Zone           string `mapstructure:"Zone"`
+	ServerName     string `mapstructure:"ServerName"`
+	ServerPassword string `mapstructure:"ServerPassword"`
 }
 
 func LoadConfig(path string) (config Config, err error) {
